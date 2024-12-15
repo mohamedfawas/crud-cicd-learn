@@ -20,22 +20,13 @@ jobs:
         go-version: '1.21'
 
     - name: Install dependencies
-      run: |
-        go mod download
-        go get github.com/stretchr/testify/mock
-        go get github.com/stretchr/testify/assert
+      run: go mod download
 
-    - name: Run tests with coverage
-      run: go test -v -coverprofile=coverage.out ./...
-
-    - name: Display coverage report
-      run: go tool cover -func=coverage.out
-
-    - name: Build
-      run: go build -v ./...
+    - name: Run tests
+      run: go test -v ./...
 
   deploy:
-    name: Deploy
+    name: Deploy to EC2
     needs: test
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main'
@@ -43,20 +34,24 @@ jobs:
     steps:
     - uses: actions/checkout@v3
 
-    - name: Set up Go
-      uses: actions/setup-go@v4
+    - name: Deploy to EC2
+      uses: appleboy/ssh-action@master
       with:
-        go-version: '1.21'
-
-    - name: Build application
-      run: go build -v -o app ./cmd/main.go
-
-    # Example deployment step (modify according to your needs)
-    - name: Deploy to server
-      run: |
-        echo "Deploying application..."
-        # Add your deployment commands here
-        # For example:
-        # - Copy files to server
-        # - Restart service
-        # - Update Docker containers
+        host: ${{ secrets.EC2_HOST }}
+        username: ec2-user           # Changed to ec2-user
+        key: ${{ secrets.EC2_SSH_KEY }}
+        script: |
+          # Stop existing application
+          sudo systemctl stop go-auth || true
+          
+          # Navigate to project directory
+          cd /home/ec2-user/go-auth-app  # Changed path
+          
+          # Pull latest changes
+          git pull origin main
+          
+          # Build application
+          go build -o main cmd/main.go
+          
+          # Restart application
+          sudo systemctl restart go-auth
