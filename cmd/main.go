@@ -23,7 +23,7 @@ func main() {
 	router.POST("/login", userHandler.Login)
 	router.GET("/users", userHandler.GetAllUsers)
 
-	// testing ci cd
+	// testing ci cda
 
 	// Start server
 	log.Println("Server starting on port 8080...")
