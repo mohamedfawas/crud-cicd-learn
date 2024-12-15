@@ -23,6 +23,8 @@ func main() {
 	router.POST("/login", userHandler.Login)
 	router.GET("/users", userHandler.GetAllUsers)
 
+	// testing ci cd
+
 	// Start server
 	log.Println("Server starting on port 8080...")
 	if err := router.Run(":8080"); err != nil {
