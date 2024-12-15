@@ -44,6 +44,13 @@ jobs:
         go mod download
         CGO_ENABLED=0 GOOS=linux go build -o go-crud-app cmd/main.go
 
+    - name: Debug Information
+      run: |
+        echo "Built application size:"
+        ls -lh go-crud-app
+        echo "Checking SSH host:"
+        nc -vz ${{ secrets.SSH_HOST }} 22 || echo "Cannot connect to host"
+
     - name: Deploy to EC2
       uses: appleboy/scp-action@master
       with:
@@ -52,6 +59,7 @@ jobs:
         key: ${{ secrets.SSH_PRIVATE_KEY }}
         source: "go-crud-app"
         target: "/opt/go-crud-app"
+        debug: true  # Enable debug mode
 
     - name: Execute remote commands
       uses: appleboy/ssh-action@master
@@ -60,6 +68,9 @@ jobs:
         username: ${{ secrets.SSH_USER }}
         key: ${{ secrets.SSH_PRIVATE_KEY }}
         script: |
+          echo "Current directory: $(pwd)"
+          echo "Checking application directory:"
+          ls -la /opt/go-crud-app
           sudo systemctl daemon-reload
           sudo systemctl restart go-crud
           sudo systemctl enable go-crud
