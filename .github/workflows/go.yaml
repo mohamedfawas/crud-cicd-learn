@@ -34,24 +34,33 @@ jobs:
     steps:
     - uses: actions/checkout@v3
 
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: '1.21'
+
+    - name: Build application
+      run: |
+        go mod download
+        CGO_ENABLED=0 GOOS=linux go build -o go-crud-app cmd/main.go
+
     - name: Deploy to EC2
+      uses: appleboy/scp-action@master
+      with:
+        host: ${{ secrets.SSH_HOST }}
+        username: ${{ secrets.SSH_USER }}
+        key: ${{ secrets.SSH_PRIVATE_KEY }}
+        source: "go-crud-app"
+        target: "/opt/go-crud-app"
+
+    - name: Execute remote commands
       uses: appleboy/ssh-action@master
       with:
-        host: ${{ secrets.EC2_HOST }}
-        username: ec2-user           # Changed to ec2-user
-        key: ${{ secrets.EC2_SSH_KEY }}
+        host: ${{ secrets.SSH_HOST }}
+        username: ${{ secrets.SSH_USER }}
+        key: ${{ secrets.SSH_PRIVATE_KEY }}
         script: |
-          # Stop existing application
-          sudo systemctl stop go-auth || true
-          
-          # Navigate to project directory
-          cd /home/ec2-user/go-auth-app  # Changed path
-          
-          # Pull latest changes
-          git pull origin main
-          
-          # Build application
-          go build -o main cmd/main.go
-          
-          # Restart application
-          sudo systemctl restart go-auth
+          sudo systemctl daemon-reload
+          sudo systemctl restart go-crud
+          sudo systemctl enable go-crud
+          sudo systemctl status go-crud
