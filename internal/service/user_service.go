@@ -10,53 +10,102 @@ type UserService interface {
 	Register(req model.RegisterRequest) error
 	Login(req model.LoginRequest) (*model.UserResponse, error)
 	GetAllUsers() ([]model.UserResponse, error)
+	GetUserByID(id uint) (*model.UserResponse, error)
+	UpdateUser(id uint, req model.UpdateUserRequest) error
+	DeleteUser(id uint) error
 }
 
-type userService struct {
-	users  map[string]*model.User // Simple in-memory storage for demonstration
+type MockUserService struct {
+	users  map[uint]*model.User
 	nextID uint
 }
 
 func NewUserService() UserService {
-	return &userService{
-		users:  make(map[string]*model.User),
+	return &MockUserService{
+		users:  make(map[uint]*model.User),
 		nextID: 1,
 	}
 }
 
-func (s *userService) Register(req model.RegisterRequest) error {
-	if _, exists := s.users[req.Email]; exists {
-		return errors.New("user already exists")
+func (s *MockUserService) Register(req model.RegisterRequest) error {
+	// Check if email already exists
+	for _, user := range s.users {
+		if user.Email == req.Email {
+			return errors.New("email already exists")
+		}
 	}
 
-	s.users[req.Email] = &model.User{
+	// Create new user
+	user := &model.User{
 		ID:       s.nextID,
+		Name:     req.Name,
 		Email:    req.Email,
-		Password: req.Password, // In real app, hash the password
+		Password: req.Password,
 	}
+	s.users[s.nextID] = user
 	s.nextID++
 	return nil
 }
 
-func (s *userService) Login(req model.LoginRequest) (*model.UserResponse, error) {
-	user, exists := s.users[req.Email]
-	if !exists || user.Password != req.Password {
-		return nil, errors.New("invalid credentials")
+func (s *MockUserService) Login(req model.LoginRequest) (*model.UserResponse, error) {
+	for _, user := range s.users {
+		if user.Email == req.Email && user.Password == req.Password {
+			return &model.UserResponse{
+				ID:    user.ID,
+				Name:  user.Name,
+				Email: user.Email,
+			}, nil
+		}
 	}
-
-	return &model.UserResponse{
-		ID:    user.ID,
-		Email: user.Email,
-	}, nil
+	return nil, errors.New("invalid credentials")
 }
 
-func (s *userService) GetAllUsers() ([]model.UserResponse, error) {
+func (s *MockUserService) GetAllUsers() ([]model.UserResponse, error) {
 	var response []model.UserResponse
 	for _, user := range s.users {
 		response = append(response, model.UserResponse{
 			ID:    user.ID,
+			Name:  user.Name,
 			Email: user.Email,
 		})
 	}
 	return response, nil
+}
+
+func (s *MockUserService) GetUserByID(id uint) (*model.UserResponse, error) {
+	user, exists := s.users[id]
+	if !exists {
+		return nil, errors.New("user not found")
+	}
+	return &model.UserResponse{
+		ID:    user.ID,
+		Name:  user.Name,
+		Email: user.Email,
+	}, nil
+}
+
+func (s *MockUserService) UpdateUser(id uint, req model.UpdateUserRequest) error {
+	user, exists := s.users[id]
+	if !exists {
+		return errors.New("user not found")
+	}
+
+	// Check if new email already exists
+	for _, u := range s.users {
+		if u.ID != id && u.Email == req.Email {
+			return errors.New("email already exists")
+		}
+	}
+
+	user.Name = req.Name
+	user.Email = req.Email
+	return nil
+}
+
+func (s *MockUserService) DeleteUser(id uint) error {
+	if _, exists := s.users[id]; !exists {
+		return errors.New("user not found")
+	}
+	delete(s.users, id) // deletes key-value pair from the map
+	return nil
 }

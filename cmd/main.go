@@ -22,8 +22,9 @@ func main() {
 	router.POST("/register", userHandler.Register)
 	router.POST("/login", userHandler.Login)
 	router.GET("/users", userHandler.GetAllUsers)
-
-	// testing ci cda
+	router.GET("/users/:id", userHandler.GetUserByID)
+	router.PUT("/users/:id", userHandler.UpdateUser)
+	router.DELETE("/users/:id", userHandler.DeleteUser)
 
 	// Start server
 	log.Println("Server starting on port 8080...")

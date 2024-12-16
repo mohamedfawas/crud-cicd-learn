@@ -59,7 +59,7 @@ jobs:
         key: ${{ secrets.SSH_PRIVATE_KEY }}
         source: "go-crud-app"
         target: "/opt/go-crud-app"
-        debug: true  # Enable debug mode
+        debug: true
 
     - name: Execute remote commands
       uses: appleboy/ssh-action@master
