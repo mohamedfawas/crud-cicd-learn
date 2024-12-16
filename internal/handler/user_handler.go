@@ -55,10 +55,6 @@ func (h *UserHandler) GetAllUsers(c *gin.Context) {
 		return
 	}
 
-	if len(users) == 0 {
-		c.JSON(http.StatusOK, gin.H{"message": "Hello world"})
-	}
-
 	c.JSON(http.StatusOK, users)
 }
 
